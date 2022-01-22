@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\FileManager;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -14,5 +15,17 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get('/', function () {
+    //return view('welcome');
+    return view('file-manager');
+});
 
+Route::match(['get', 'post'], '/get-directories', [FileManager::class, 'getDirectories']);
+Route::match(['get', 'post'], '/get-files', [FileManager::class, 'getFiles']);
+Route::match(['get', 'post'], '/get-files-directories', [FileManager::class, 'getFilesDirectories']);
+
+Route::match(['get', 'post'], '/get-tree', [FileManager::class, 'getTree']);
+Route::match(['post'], '/make-directory', [FileManager::class, 'makeDir']);
+Route::get('delete-directory',[FileManager::class, 'deleteDir']);
+Route::post('rename-directory',[FileManager::class, 'renameDir']);
 Route::get('admin', [DashboardController::class, 'index'])->name('admin');
