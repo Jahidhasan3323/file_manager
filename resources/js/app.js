@@ -1,7 +1,9 @@
 import Vue from 'vue';
+import VueLazyload from 'vue-lazyload'
 window.Vue = require('vue').default;
 require('./bootstrap');
 
+Vue.use(VueLazyload)
 //sweetalert2
 import Swal from 'sweetalert2'
 window.Swal = require('sweetalert2');

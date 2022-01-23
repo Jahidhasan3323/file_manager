@@ -5,9 +5,6 @@
                 data-backdrop="static" data-keyboard="false">
             Create Directory
         </button>
-
-        <button type="button" class="btn btn-info">Upload File</button>
-
         <!-- Modal -->
         <div class="modal fade" id="directoryModal">
             <div class="modal-dialog">
@@ -42,7 +39,7 @@
 
 <script>
 export default {
-    name   : "Header",
+    name   : "Directory",
     data() {
         return {
             directoryName    : '',
@@ -126,9 +123,8 @@ export default {
                     })
                 })
             })
-        }
+        },
     }
-
 }
 </script>
 

@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Rules\FileManagerFileUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class FileManager extends Controller
 {
@@ -179,6 +182,7 @@ class FileManager extends Controller
      */
     private function getIcon($directory)
     {
+
         return "fa fa-folder text-warning";
     }
 
@@ -188,7 +192,8 @@ class FileManager extends Controller
      */
     private function getExt($directory)
     {
-        return ".gpg";
+        $array = explode('.', $directory);
+        return end($array);
     }
 
     /**
@@ -198,7 +203,7 @@ class FileManager extends Controller
      */
     public function makeDir(Request $request)
     {
-        $this->relativePath = $request->post('relativePath')  == '/' ? '' : $request->post('relativePath');
+        $this->relativePath = $request->post('relativePath') == '/' ? '' : $request->post('relativePath');
         $directoryName = $request->post('directoryName');
         $this->validate($request, [
             'directoryName' => 'required',
@@ -223,7 +228,7 @@ class FileManager extends Controller
      */
     public function renameDir(Request $request)
     {
-        $this->relativePath = $request->post('relativePath')  == '/' ? '' : $request->post('relativePath');
+        $this->relativePath = $request->post('relativePath') == '/' ? '' : $request->post('relativePath');
         $editDirectoryName = $request->post('editDirectoryName');
         $directoryName = $request->post('directoryName');
         $this->validate($request, [
@@ -243,6 +248,10 @@ class FileManager extends Controller
         }
     }
 
+    /**
+     * @param Request $request
+     * @return array|JsonResponse
+     */
     public function deleteDir(Request $request)
     {
 
@@ -261,4 +270,54 @@ class FileManager extends Controller
         }
     }
 
+    /**
+     * @param Request $request
+     * @return JsonResponse
+     * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
+     */
+    public function uploadFile(Request $request):JsonResponse
+    {
+        $file = $request->file('file');
+        $this->relativePath = $request->post('relativePath') == '/' ? '' : $request->post('relativePath');
+        $this->validate($request, ['file' => new FileManagerFileUpload]);
+
+        if (!Storage::disk($this->disc)->exists("chunks")) {
+            Storage::disk($this->disc)->makeDirectory("chunks");
+        }
+        if ($request->has('is_first') && $request->boolean('is_first')) {
+            Storage::disk($this->disc)->delete("chunks/{$file->getClientOriginalName()}");
+        }
+        $path = Storage::disk($this->disc)->path("chunks/{$file->getClientOriginalName()}");
+        File::append($path, $file->get());
+
+        if ($request->has('is_last') && $request->boolean('is_last')) {
+            $this->convertToMainFile($path);
+        }
+        return response()->json(['uploaded' => true]);
+    }
+
+    /**
+     * @param $path
+     */
+    private function convertToMainFile($path){
+        $name = basename($path, '.part');
+        $newName = basename($path, '.part');
+        if (Storage::disk($this->disc)->exists("chunks/{$newName}.part")) {
+            if (Storage::disk($this->disc)->exists("{$this->relativePath}/{$newName}")) {
+                $newName = $this->generateNewName($newName);
+            }
+            Storage::disk($this->disc)->move("chunks/{$name}.part", "{$this->relativePath}/{$newName}");
+        }
+    }
+
+    /**
+     * @param $name
+     * @return string
+     */
+    private function generateNewName($name){
+        $array = explode('.', $name);
+        $ext = end($array);
+        $pathWithoutExt=str_replace(".{$ext}",rand(1,1000),$name);
+        return "{$pathWithoutExt}.{$ext}";
+    }
 }

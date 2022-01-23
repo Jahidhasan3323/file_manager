@@ -67,7 +67,9 @@ return [
     */
 
     'links' => [
-        public_path('storage') => storage_path('app/public'),
+        public_path('storage') => storage_path('app'),
     ],
+    'allowed_file_extension' => explode(',', env('ALLOWED_FILE_EXTENSION')),
+    'allowed_file_size' => env('ALLOWED_FILE_SIZE', 5242880)
 
 ];

@@ -6,7 +6,8 @@
                     <div class="card-header">
                         <button @click="getData('/')" class="btn btn-info">Root</button>
                         <button @click="getData(prevDir)" class="btn btn-info">Previous</button>
-                        <Header class="float-right" ref="header"></Header>
+                        <file-upload class="float-right"></file-upload>
+                        <directory class="float-right mr-1" ref="header"></directory>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -15,10 +16,12 @@
                                     <li v-for="directory in directories" class="list-group-item">
                                         <span style="cursor: pointer"
                                               @click="getData(directory.relativePath)">{{ directory.text }}</span>
-                                        <span @click="deleteDir(directory.relativePath)" class="float-end" ><label
+                                        <span @click="deleteDir(directory.relativePath)" class="float-end"><label
                                             class="badge badge-danger"><i class="fas fa-times"></i></label></span>
 
-                                        <span @click="renameDir(directory.relativePath, directory.text)" class="float-end pr-1" data-toggle="modal" data-target="#directoryModal"><label
+                                        <span @click="renameDir(directory.relativePath, directory.text)"
+                                              class="float-end pr-1" data-toggle="modal"
+                                              data-target="#directoryModal"><label
                                             class="badge badge-info"><i class="fas fa-edit"></i></label></span>
                                     </li>
                                 </ul>
@@ -44,6 +47,10 @@
                                         <td>{{ item.icon }}</td>
                                         <td>{{ item.ext }}</td>
                                         <td>
+                                            <button class="btn btn-info"
+                                                    @click="downloadFile('storage/'+item.relativePath, item.ext)">
+                                                <i class="fas fa-download"></i>
+                                            </button>
                                             <button class="btn btn-info">view</button>
                                         </td>
 
@@ -61,11 +68,13 @@
 </template>
 
 <script>
-import Header from "./components/Header";
+import Directory     from "./components/Directory";
+import FileUpload from "./components/FileUpload";
 
 export default {
     components: {
-        Header
+        FileUpload,
+        Directory
     },
     data() {
         return {
@@ -98,16 +107,16 @@ export default {
             this.prevDir = relativePathArray.join('/') ? relativePathArray.join('/') : '/'
         },
         renameDir(relativePath, text) {
-            this.$refs.header.editDirectoryName=relativePath
-            this.$refs.header.directoryName=text
-            this.$refs.header.isEdit=true
+            this.$refs.header.editDirectoryName = relativePath
+            this.$refs.header.directoryName     = text
+            this.$refs.header.isEdit            = true
         },
         deleteDir(relativePath) {
             if (confirm("Do you really want to delete?")) {
                 axios.get('/delete-directory', {
                     params: {
-                        'relativePath' : relativePath,
-                        'currentDir' : this.currentDir,
+                        'relativePath': relativePath,
+                        'currentDir'  : this.currentDir,
                     }
                 }).then(({data}) => {
                     if (data.status) {
@@ -133,7 +142,34 @@ export default {
                     })
                 })
             }
-        }
+        },
+        downloadFile(url, ext) {
+            if (!url) {
+                alert('Please provide url to download.');
+                return;
+            } else {
+                var m = url.toString().match(/.*\/(.+?)\./);
+                if (m && m.length > 1) {
+                    var name = m[1];
+                }
+            }
+
+            axios({
+                url         : url,
+                method      : 'GET',
+                responseType: 'blob',
+            }).then((file) => {
+                const url  = window.URL.createObjectURL(new Blob([file.data]));
+                const link = document.createElement('a');
+                link.href  = url;
+                let time   = new Date();
+                link.setAttribute('download', name + '.' + ext);
+                document.body.appendChild(link);
+                link.click();
+            }).catch(error => {
+                toastr.error(error.response.statusText);
+            });
+        },
     }
 }
 </script>
