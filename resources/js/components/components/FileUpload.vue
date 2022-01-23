@@ -18,21 +18,27 @@
                     </div>
                     <div class="modal-body">
                         <form v-on:submit.prevent>
-                            <vue-upload-multiple-image
-                                dragText="Drag an image here"
-                                browseText=""
-                                @upload-success="uploadImageSuccess"
-                                @before-remove="beforeRemove"
-                                :data-images="images"
-                                idUpload="myIdUpload"
-                                editUpload="myIdEdit"
-                                :disabled="isUploading"
-                                dropText="drop your image here"
-                                ref="image"
-                                :showPrimary=false
-                                :showEdit=false
-                                accept="all"
-                            ></vue-upload-multiple-image>
+                            <!--                            <vue-upload-multiple-image
+                                                            dragText="Drag an image here"
+                                                            browseText=""
+                                                            @upload-success="uploadImageSuccess"
+                                                            @before-remove="beforeRemove"
+                                                            :data-images="images"
+                                                            idUpload="myIdUpload"
+                                                            editUpload="myIdEdit"
+                                                            :disabled="isUploading"
+                                                            dropText="drop your image here"
+                                                            ref="image"
+                                                            :showPrimary=false
+                                                            :showEdit=false
+                                                            accept="all"
+                                                        ></vue-upload-multiple-image>-->
+                            <vue-dropzone
+                                ref="fileUpload"
+                                id="dropzone"
+                                :options="dropzoneOptions"
+                                @vdropzone-files-added="uploadImageSuccess"
+                            ></vue-dropzone>
                             <progress-bar v-if="progress > 0" :options="options" :value="progress"/>
                         </form>
                     </div>
@@ -51,22 +57,33 @@
 import VueUploadMultipleImage from 'vue-upload-multiple-image'
 // vue progress bar
 import ProgressBar            from 'vuejs-progress-bar'
-// import vue2Dropzone from 'vue2-dropzone'
-// import 'vue2-dropzone/dist/vue2Dropzone.min.css'
+import vue2Dropzone           from 'vue2-dropzone'
+import 'vue2-dropzone/dist/vue2Dropzone.min.css'
+
 export default {
     name      : "FileUpload",
     components: {
         VueUploadMultipleImage,
-        ProgressBar
+        ProgressBar,
+        vueDropzone: vue2Dropzone
     },
     data() {
         return {
             images         : [],
             isUploading    : false,
             file           : null,
+            selectedFile   : {},
             chunks         : [],
             uploaded       : 0,
             totalChunksSize: 0,
+            dropzoneOptions: {
+                autoProcessQueue: false,
+                url             : 'no-url',
+                thumbnailWidth  : 150,
+                maxFilesize     : 0.5,
+                addRemoveLinks  : true,
+                headers         : {'Content-Type': 'application/octet-stream'}
+            },
             options        : {
                 text    : {
                     color          : '#FFFFFF',
@@ -136,28 +153,43 @@ export default {
 
     },
     methods   : {
+
         closeDirModal() {
             this.afterUpload()
         },
-        async uploadImageSuccess(formData, index, fileList) {
-            // console.log(formData, fileList, '1', fileList[0].isUploaded)
+        uploadImageSuccess(fileList) {
+            $(".dz-progress").remove();
+            // TODO::disable dropzone when one file is uploading
+            // if(!this.progress >=0 && this.progress < 100){
+            //     Toast.fire({
+            //         icon : 'error',
+            //         title: 'Already a file inprogress'
+            //     })
+            // }
             Object.entries(fileList).forEach(ele => {
-                // TODO::need to upload multiple image
-                if (!ele[1].isUploaded) {
-                    this.isUploading = true
-                    var ImageURL     = ele[1].path
-                    // Split the base64 string in data and contentType
-                    var block        = ImageURL.split(";");
-                    // Get the content type of the image
-                    var contentType  = block[0].split(":")[1];// In this case "image/gif"
-                    // get the real base64 content of the file
-                    var realData = block[1].split(",")[1];// In this case "R0lGODlhPQBEAPeoAJosM...."
-                    // Convert it to a blob to upload
-                    this.file      = this.b64toBlob(realData, contentType);
-                    this.file.name = ele[1].name
-                    this.createChunks();
-                }
-                ele[1].isUploaded = true
+                this.selectedFile = ele[1]
+                // console.log(formData, fileList, '1', fileList[0].isUploaded)
+                const fileUrl     = setInterval(() => {
+                    if (ele[1].dataURL) {
+                        // TODO::need to upload multiple image
+                        if (ele[1].status === "queued") {
+                            this.isUploading = true
+                            var ImageURL     = ele[1].dataURL
+                            // Split the base64 string in data and contentType
+                            var block        = ImageURL.split(";");
+                            // Get the content type of the image
+                            var contentType  = block[0].split(":")[1];// In this case "image/gif"
+                            // get the real base64 content of the file
+                            var realData = block[1].split(",")[1];// In this case "R0lGODlhPQBEAPeoAJosM...."
+                            // Convert it to a blob to upload
+                            this.file      = this.b64toBlob(realData, contentType);
+                            this.file.name = ele[1].name
+                            this.createChunks();
+                        }
+                        ele[1].status = 'uploaded'
+                        clearInterval(fileUrl)
+                    }
+                }, 100)
             })
             // console.log(fileList, '2', fileList[0].isUploaded)
         },
@@ -174,18 +206,17 @@ export default {
             this.chunks          = []
             this.uploaded        = 0
             this.totalChunksSize = 0
+            this.selectedFile    = {}
         },
-        cancelUpload(errors){
-            // TODO::remove file when cancel upload
-            // setTimeout(()=>{
-            //     console.log(this.images)
-            // },300)
+        cancelUpload(errors) {
             Object.entries(errors).forEach(([key, value]) => {
                 Toast.fire({
                     icon : 'error',
                     title: value
                 })
             })
+            this.$refs.fileUpload.removeFile(this.selectedFile)
+            this.selectedFile = {}
         },
         select(event) {
             this.file = event.target.files.item(0);
@@ -200,13 +231,13 @@ export default {
                 }
             }).catch(error => {
                 let errors = error?.response?.data?.errors;
-                this.afterUpload()
                 this.cancelUpload(errors)
+                this.afterUpload()
             });
         },
         createChunks() {
-            // let size             = 2408;
-            let size             = 1048576;
+            let size             = 2408;
+            // let size             = 1048576;
             let chunks           = Math.ceil(this.file.size / size);
             this.totalChunksSize = chunks
             for (let i = 0; i < chunks; i++) {
