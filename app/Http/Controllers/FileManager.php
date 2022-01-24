@@ -275,7 +275,7 @@ class FileManager extends Controller
      * @return JsonResponse
      * @throws \Illuminate\Contracts\Filesystem\FileNotFoundException
      */
-    public function uploadFile(Request $request):JsonResponse
+    public function uploadFile(Request $request): JsonResponse
     {
         $file = $request->file('file');
         $this->relativePath = $request->post('relativePath') == '/' ? '' : $request->post('relativePath');
@@ -297,9 +297,112 @@ class FileManager extends Controller
     }
 
     /**
+     * @param Request $request
+     * @return array|JsonResponse
+     */
+    public function deleteFile(Request $request)
+    {
+        $this->relativePath = $request->post('currentDir');
+        $deletedDir = $request->post('relativePath');
+        try {
+            if (Storage::disk($this->disc)->exists($deletedDir)) {
+                Storage::disk($this->disc)->delete($deletedDir);
+                $response = $this->getData();
+                return response()->json(['data' => $response, 'status' => true, 'message' => 'File deleted successfully']);
+            } else {
+                return response()->json(['status' => false, 'message' => 'File dose not exists']);
+            }
+        } catch (\Exception $e) {
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * @param Request $request
+     * @return array|JsonResponse
+     */
+    public function changeDir(Request $request)
+    {
+        $this->relativePath = $request->post('currentDir') == '/' ? '' : $request->post('currentDir');
+        $selectedDir = $request->post('selectedDir');
+        $targetDir = $request->post('targetDir');
+        $changeType = $request->post('changeType');
+        $changeFileType = $request->post('changeFileType');
+        try {
+            if (Storage::disk($this->disc)->exists($targetDir)) {
+                switch ([$changeFileType, $changeType]) {
+                    case ['directory', 'copy'] :
+                    {
+                        $this->copyDirectory($targetDir, $selectedDir);
+                        break;
+                    }
+                    case ['directory', 'move'] :
+                    {
+                        $this->moveDirectory($targetDir, $selectedDir);
+                        break;
+                    }
+                    case ['file', 'copy'] :
+                    {
+                        $this->copyFile($targetDir, $selectedDir);
+                        break;
+                    }
+                    case ['file', 'move'] :
+                    {
+                        $this->moveFile($targetDir, $selectedDir);
+                        break;
+                    }
+                }
+                $response = $this->getData();
+                return response()->json(['data' => $response, 'status' => true, 'message' => "{$changeFileType} {$changeType} successfully"]);
+            } else {
+                return response()->json(['status' => false, 'message' => "{$changeFileType} dose not exists"]);
+            }
+        } catch (\Exception $e) {
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * @param $targetDir
+     */
+    private function copyDirectory($targetDir, $selectedDir)
+    {
+//        TODO::copy directory not working
+        Storage::disk($this->disc)->copy($selectedDir, $targetDir . '/' . $selectedDir);
+    }
+
+    /**
+     * @param $targetDir
+     * @param $selectedDir
+     */
+    private function moveDirectory($targetDir, $selectedDir)
+    {
+        Storage::disk($this->disc)->move($selectedDir, $targetDir . '/' . $selectedDir);
+    }
+
+    /**
+     * @param $targetDir
+     * @param $selectedDir
+     */
+    private function copyFile($targetDir, $selectedDir)
+    {
+        Storage::disk($this->disc)->copy($this->relativePath.'/'.$selectedDir, $targetDir . '/' . $selectedDir);
+    }
+
+    /**
+     * @param $targetDir
+     * @param $selectedDir
+     */
+    private function moveFile($targetDir, $selectedDir)
+    {
+        Storage::disk($this->disc)->move($this->relativePath.'/'.$selectedDir, $targetDir . '/' . $selectedDir);
+    }
+
+    /**
      * @param $path
      */
-    private function convertToMainFile($path){
+    private function convertToMainFile($path)
+    {
         $name = basename($path, '.part');
         $newName = basename($path, '.part');
         if (Storage::disk($this->disc)->exists("chunks/{$newName}.part")) {
@@ -314,10 +417,11 @@ class FileManager extends Controller
      * @param $name
      * @return string
      */
-    private function generateNewName($name){
+    private function generateNewName($name)
+    {
         $array = explode('.', $name);
         $ext = end($array);
-        $pathWithoutExt=str_replace(".{$ext}",rand(1,1000),$name);
+        $pathWithoutExt = str_replace(".{$ext}", rand(1, 1000), $name);
         return "{$pathWithoutExt}.{$ext}";
     }
 }

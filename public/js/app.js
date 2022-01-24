@@ -5345,6 +5345,63 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = ({
@@ -5358,7 +5415,11 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       directories: [],
       isRoot: false,
       prevDir: '/',
-      currentDir: ''
+      currentDir: '',
+      targetDir: '',
+      selectedDir: '',
+      changeType: '',
+      changeFileType: ''
     };
   },
   mounted: function mounted() {
@@ -5431,6 +5492,49 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
         });
       }
     },
+    deleteFile: function deleteFile(relativePath) {
+      if (confirm("Do you really want to delete?")) {
+        this.deleteApiCall(relativePath);
+      }
+    },
+    deleteApiCall: function deleteApiCall(relativePath) {
+      var _this3 = this;
+
+      axios.get('/delete-file', {
+        params: {
+          'relativePath': relativePath,
+          'currentDir': this.currentDir
+        }
+      }).then(function (_ref5) {
+        var data = _ref5.data;
+
+        if (data.status) {
+          Toast.fire({
+            icon: 'success',
+            title: data.message
+          });
+          _this3.files = data.data.files;
+          _this3.directories = data.data.directories;
+        } else {
+          Toast.fire({
+            icon: 'error',
+            title: data.message
+          });
+        }
+      })["catch"](function (error) {
+        var errors = error.response.data.errors;
+        Object.entries(errors).forEach(function (_ref6) {
+          var _ref7 = _slicedToArray(_ref6, 2),
+              key = _ref7[0],
+              value = _ref7[1];
+
+          Toast.fire({
+            icon: 'error',
+            title: value
+          });
+        });
+      });
+    },
     downloadFile: function downloadFile(url, ext) {
       if (!url) {
         alert('Please provide url to download.');
@@ -5458,6 +5562,53 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       })["catch"](function (error) {
         toastr.error(error.response.statusText);
       });
+    },
+    submitCopyMoveForm: function submitCopyMoveForm() {
+      var _this4 = this;
+
+      axios.post('/change-directory', {
+        'targetDir': this.targetDir,
+        'selectedDir': this.selectedDir,
+        'currentDir': this.currentDir,
+        'changeType': this.changeType,
+        'changeFileType': this.changeFileType
+      }).then(function (_ref8) {
+        var data = _ref8.data;
+
+        if (data.status) {
+          Toast.fire({
+            icon: 'success',
+            title: data.message
+          });
+          _this4.files = data.data.files;
+          _this4.directories = data.data.directories;
+
+          _this4.$refs.Close.click();
+        } else {
+          Toast.fire({
+            icon: 'error',
+            title: data.message
+          });
+        }
+      })["catch"](function (error) {
+        var errors = error.response.data.errors;
+        Object.entries(errors).forEach(function (_ref9) {
+          var _ref10 = _slicedToArray(_ref9, 2),
+              key = _ref10[0],
+              value = _ref10[1];
+
+          Toast.fire({
+            icon: 'error',
+            title: value
+          });
+        });
+      });
+    },
+    closeCopyMoveModal: function closeCopyMoveModal() {
+      this.changeType = '';
+      this.changeFileType = '';
+      this.targetDir = '';
+      this.selectedDir = '';
     }
   }
 });
@@ -5716,6 +5867,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 //
 //
 //
+//
  // vue progress bar
 
 
@@ -5820,6 +5972,9 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
   methods: {
     closeDirModal: function closeDirModal() {
       this.afterUpload();
+    },
+    removeFile: function removeFile(file, error, xhr) {
+      this.$parent.deleteApiCall(this.$parent.currentDir + '/' + file.name);
     },
     uploadImageSuccess: function uploadImageSuccess(fileList) {
       var _this = this;
@@ -47821,10 +47976,41 @@ var render = function () {
                           _c(
                             "span",
                             {
-                              staticClass: "float-end pr-1",
+                              staticClass: "float-end",
+                              on: {
+                                click: function ($event) {
+                                  _vm.changeType = "copy"
+                                  _vm.changeFileType = "directory"
+                                  _vm.selectedDir = directory.relativePath
+                                },
+                              },
+                            },
+                            [_vm._m(1, true)]
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "span",
+                            {
+                              staticClass: "float-end",
+                              on: {
+                                click: function ($event) {
+                                  _vm.changeType = "move"
+                                  _vm.changeFileType = "directory"
+                                  _vm.selectedDir = directory.relativePath
+                                },
+                              },
+                            },
+                            [_vm._m(2, true)]
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "span",
+                            {
+                              staticClass: "float-end mr-1",
                               attrs: {
                                 "data-toggle": "modal",
                                 "data-target": "#directoryModal",
+                                title: "edit",
                               },
                               on: {
                                 click: function ($event) {
@@ -47835,7 +48021,7 @@ var render = function () {
                                 },
                               },
                             },
-                            [_vm._m(1, true)]
+                            [_vm._m(3, true)]
                           ),
                         ])
                       }),
@@ -47850,7 +48036,7 @@ var render = function () {
               _vm._v(" "),
               _c("div", { staticClass: "col-md-8" }, [
                 _c("table", { staticClass: "table table-bordered" }, [
-                  _vm._m(2),
+                  _vm._m(4),
                   _vm._v(" "),
                   _c(
                     "tbody",
@@ -47868,7 +48054,7 @@ var render = function () {
                           _c(
                             "button",
                             {
-                              staticClass: "btn btn-info",
+                              staticClass: "btn btn-success",
                               on: {
                                 click: function ($event) {
                                   return _vm.downloadFile(
@@ -47881,9 +48067,70 @@ var render = function () {
                             [_c("i", { staticClass: "fas fa-download" })]
                           ),
                           _vm._v(" "),
+                          _c(
+                            "button",
+                            {
+                              staticClass: "btn btn-primary",
+                              attrs: {
+                                "data-toggle": "modal",
+                                "data-target": "#directoryCopyModal",
+                                "data-backdrop": "static",
+                                "data-keyboard": "false",
+                                title: "copy",
+                              },
+                              on: {
+                                click: function ($event) {
+                                  _vm.changeType = "copy"
+                                  _vm.changeFileType = "file"
+                                  _vm.selectedDir = item.relativePath
+                                },
+                              },
+                            },
+                            [_c("i", { staticClass: "fas fa-copy " })]
+                          ),
+                          _vm._v(" "),
+                          _c(
+                            "button",
+                            {
+                              staticClass: "btn btn-warning",
+                              attrs: {
+                                "data-toggle": "modal",
+                                "data-target": "#directoryCopyModal",
+                                "data-backdrop": "static",
+                                "data-keyboard": "false",
+                                title: "move",
+                              },
+                              on: {
+                                click: function ($event) {
+                                  _vm.changeType = "move"
+                                  _vm.changeFileType = "file"
+                                  _vm.selectedDir = item.relativePath
+                                },
+                              },
+                            },
+                            [
+                              _c("i", {
+                                staticClass: "fas fa-arrows-alt text-white",
+                              }),
+                            ]
+                          ),
+                          _vm._v(" "),
                           _c("button", { staticClass: "btn btn-info" }, [
                             _vm._v("view"),
                           ]),
+                          _vm._v(" "),
+                          _c(
+                            "button",
+                            {
+                              staticClass: "btn btn-danger",
+                              on: {
+                                click: function ($event) {
+                                  return _vm.deleteFile(item.relativePath)
+                                },
+                              },
+                            },
+                            [_c("i", { staticClass: "fas fa-trash" })]
+                          ),
                         ]),
                       ])
                     }),
@@ -47896,6 +48143,123 @@ var render = function () {
         ]),
       ]),
     ]),
+    _vm._v(" "),
+    _c(
+      "div",
+      { staticClass: "modal fade", attrs: { id: "directoryCopyModal" } },
+      [
+        _c("div", { staticClass: "modal-dialog" }, [
+          _c("div", { staticClass: "modal-content" }, [
+            _c("div", { staticClass: "modal-header" }, [
+              _c(
+                "h5",
+                {
+                  staticClass: "modal-title text-capitalize",
+                  attrs: { id: "directoryModalLabel" },
+                },
+                [
+                  _vm._v(
+                    _vm._s(_vm.changeType) + " " + _vm._s(_vm.changeFileType)
+                  ),
+                ]
+              ),
+              _vm._v(" "),
+              _c(
+                "button",
+                {
+                  staticClass: "close",
+                  attrs: {
+                    type: "button",
+                    "data-dismiss": "modal",
+                    "aria-label": "Close",
+                  },
+                  on: { click: _vm.closeCopyMoveModal },
+                },
+                [
+                  _c("span", { attrs: { "aria-hidden": "true" } }, [
+                    _vm._v("×"),
+                  ]),
+                ]
+              ),
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "modal-body" }, [
+              _c(
+                "form",
+                {
+                  on: {
+                    submit: function ($event) {
+                      $event.preventDefault()
+                    },
+                  },
+                },
+                [
+                  _c("div", { staticClass: "form-group" }, [
+                    _c("label", { attrs: { for: "directoryName" } }, [
+                      _vm._v("Target Dir"),
+                    ]),
+                    _vm._v(" "),
+                    _c("input", {
+                      directives: [
+                        {
+                          name: "model",
+                          rawName: "v-model",
+                          value: _vm.targetDir,
+                          expression: "targetDir",
+                        },
+                      ],
+                      staticClass: "form-control",
+                      attrs: {
+                        type: "text",
+                        id: "directoryName",
+                        placeholder: "Target Dir...",
+                        required: "",
+                      },
+                      domProps: { value: _vm.targetDir },
+                      on: {
+                        input: function ($event) {
+                          if ($event.target.composing) {
+                            return
+                          }
+                          _vm.targetDir = $event.target.value
+                        },
+                      },
+                    }),
+                  ]),
+                ]
+              ),
+            ]),
+            _vm._v(" "),
+            _c("div", { staticClass: "modal-footer" }, [
+              _c(
+                "button",
+                {
+                  ref: "Close",
+                  staticClass: "btn btn-secondary",
+                  attrs: { type: "button", "data-dismiss": "modal" },
+                  on: { click: _vm.closeCopyMoveModal },
+                },
+                [
+                  _vm._v(
+                    "\n                        Close\n                    "
+                  ),
+                ]
+              ),
+              _vm._v(" "),
+              _c(
+                "button",
+                {
+                  staticClass: "btn btn-primary",
+                  attrs: { type: "button" },
+                  on: { click: _vm.submitCopyMoveForm },
+                },
+                [_vm._v("Save changes")]
+              ),
+            ]),
+          ]),
+        ]),
+      ]
+    ),
   ])
 }
 var staticRenderFns = [
@@ -47903,9 +48267,49 @@ var staticRenderFns = [
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c("label", { staticClass: "badge badge-danger" }, [
-      _c("i", { staticClass: "fas fa-times" }),
-    ])
+    return _c(
+      "label",
+      { staticClass: "badge badge-danger mr-1", attrs: { title: "delete" } },
+      [_c("i", { staticClass: "fas fa-trash" })]
+    )
+  },
+  function () {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c(
+      "label",
+      {
+        staticClass: "badge badge-success mr-1",
+        attrs: {
+          "data-toggle": "modal",
+          "data-target": "#directoryCopyModal",
+          "data-backdrop": "static",
+          "data-keyboard": "false",
+          title: "copy",
+        },
+      },
+      [_c("i", { staticClass: "fas fa-copy" })]
+    )
+  },
+  function () {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c(
+      "label",
+      {
+        staticClass: "badge badge-warning mr-1 ",
+        attrs: {
+          "data-toggle": "modal",
+          "data-target": "#directoryCopyModal",
+          "data-backdrop": "static",
+          "data-keyboard": "false",
+          title: "move",
+        },
+      },
+      [_c("i", { staticClass: "fas fa-arrows-alt text-white" })]
+    )
   },
   function () {
     var _vm = this
@@ -48151,7 +48555,10 @@ var render = function () {
                 _c("vue-dropzone", {
                   ref: "fileUpload",
                   attrs: { id: "dropzone", options: _vm.dropzoneOptions },
-                  on: { "vdropzone-files-added": _vm.uploadImageSuccess },
+                  on: {
+                    "vdropzone-files-added": _vm.uploadImageSuccess,
+                    "vdropzone-removed-file": _vm.removeFile,
+                  },
                 }),
                 _vm._v(" "),
                 _vm.progress > 0

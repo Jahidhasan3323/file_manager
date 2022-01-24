@@ -38,6 +38,7 @@
                                 id="dropzone"
                                 :options="dropzoneOptions"
                                 @vdropzone-files-added="uploadImageSuccess"
+                                @vdropzone-removed-file="removeFile"
                             ></vue-dropzone>
                             <progress-bar v-if="progress > 0" :options="options" :value="progress"/>
                         </form>
@@ -156,6 +157,9 @@ export default {
 
         closeDirModal() {
             this.afterUpload()
+        },
+        removeFile(file, error, xhr){
+            this.$parent.deleteApiCall(this.$parent.currentDir+'/'+file.name)
         },
         uploadImageSuccess(fileList) {
             $(".dz-progress").remove();

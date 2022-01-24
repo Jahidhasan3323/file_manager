@@ -29,4 +29,6 @@ Route::match(['post'], '/make-directory', [FileManager::class, 'makeDir']);
 Route::get('delete-directory',[FileManager::class, 'deleteDir']);
 Route::post('rename-directory',[FileManager::class, 'renameDir']);
 Route::post('upload-file',[FileManager::class, 'uploadFile']);
+Route::get('delete-file',[FileManager::class, 'deleteFile']);
+Route::post('change-directory',[FileManager::class, 'changeDir']);
 Route::get('admin', [DashboardController::class, 'index'])->name('admin');

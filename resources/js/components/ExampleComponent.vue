@@ -17,11 +17,25 @@
                                         <span style="cursor: pointer"
                                               @click="getData(directory.relativePath)">{{ directory.text }}</span>
                                         <span @click="deleteDir(directory.relativePath)" class="float-end"><label
-                                            class="badge badge-danger"><i class="fas fa-times"></i></label></span>
+                                            class="badge badge-danger mr-1" title="delete"><i class="fas fa-trash"></i></label></span>
 
+                                        <span
+                                            @click="changeType='copy'; changeFileType='directory'; selectedDir=directory.relativePath"
+                                            class="float-end"><label
+                                            class="badge badge-success mr-1" data-toggle="modal"
+                                            data-target="#directoryCopyModal" data-backdrop="static"
+                                            data-keyboard="false" title="copy"><i
+                                            class="fas fa-copy"></i></label></span>
+                                        <span
+                                            @click="changeType='move'; changeFileType='directory'; selectedDir=directory.relativePath"
+                                            class="float-end"><label
+                                            class="badge badge-warning mr-1 " data-toggle="modal"
+                                            data-target="#directoryCopyModal" data-backdrop="static"
+                                            data-keyboard="false" title="move"><i
+                                            class="fas fa-arrows-alt text-white"></i></label></span>
                                         <span @click="renameDir(directory.relativePath, directory.text)"
-                                              class="float-end pr-1" data-toggle="modal"
-                                              data-target="#directoryModal"><label
+                                              class="float-end mr-1" data-toggle="modal"
+                                              data-target="#directoryModal" title="edit"><label
                                             class="badge badge-info"><i class="fas fa-edit"></i></label></span>
                                     </li>
                                 </ul>
@@ -47,15 +61,29 @@
                                         <td>{{ item.icon }}</td>
                                         <td>{{ item.ext }}</td>
                                         <td>
-                                            <button class="btn btn-info"
+                                            <button class="btn btn-success"
                                                     @click="downloadFile('storage/'+item.relativePath, item.ext)">
                                                 <i class="fas fa-download"></i>
                                             </button>
+                                            <button class="btn btn-primary"
+                                                    @click="changeType='copy'; changeFileType='file'; selectedDir=item.relativePath" data-toggle="modal"
+                                                    data-target="#directoryCopyModal" data-backdrop="static"
+                                                    data-keyboard="false" title="copy">
+                                                <i class="fas fa-copy "></i>
+                                            </button>
+                                            <button class="btn btn-warning"
+                                                    @click="changeType='move'; changeFileType='file'; selectedDir=item.relativePath" data-toggle="modal"
+                                                    data-target="#directoryCopyModal" data-backdrop="static"
+                                                    data-keyboard="false" title="move">
+                                                <i class="fas fa-arrows-alt text-white"></i>
+                                            </button>
                                             <button class="btn btn-info">view</button>
+                                            <button class="btn btn-danger"
+                                                    @click="deleteFile(item.relativePath)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
                                         </td>
-
                                     </tr>
-
                                     </tbody>
                                 </table>
                             </div>
@@ -64,11 +92,40 @@
                 </div>
             </div>
         </div>
+        <div class="modal fade" id="directoryCopyModal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title text-capitalize" id="directoryModalLabel">{{ changeType }} {{ changeFileType }}</h5>
+                        <button @click="closeCopyMoveModal" type="button" class="close" data-dismiss="modal"
+                                aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <form v-on:submit.prevent>
+                            <div class="form-group">
+                                <label for="directoryName">Target Dir</label>
+                                <input type="text" v-model="targetDir" class="form-control" id="directoryName"
+                                       placeholder="Target Dir..." required>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button ref="Close" @click="closeCopyMoveModal" type="button" class="btn btn-secondary"
+                                data-dismiss="modal">
+                            Close
+                        </button>
+                        <button @click="submitCopyMoveForm" type="button" class="btn btn-primary">Save changes</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
 <script>
-import Directory     from "./components/Directory";
+import Directory  from "./components/Directory";
 import FileUpload from "./components/FileUpload";
 
 export default {
@@ -78,11 +135,15 @@ export default {
     },
     data() {
         return {
-            files      : [],
-            directories: [],
-            isRoot     : false,
-            prevDir    : '/',
-            currentDir : '',
+            files         : [],
+            directories   : [],
+            isRoot        : false,
+            prevDir       : '/',
+            currentDir    : '',
+            targetDir     : '',
+            selectedDir   : '',
+            changeType    : '',
+            changeFileType: ''
         }
     },
     mounted() {
@@ -143,6 +204,41 @@ export default {
                 })
             }
         },
+        deleteFile(relativePath) {
+            if (confirm("Do you really want to delete?")) {
+                this.deleteApiCall(relativePath)
+            }
+        },
+        deleteApiCall(relativePath) {
+            axios.get('/delete-file', {
+                params: {
+                    'relativePath': relativePath,
+                    'currentDir'  : this.currentDir,
+                }
+            }).then(({data}) => {
+                if (data.status) {
+                    Toast.fire({
+                        icon : 'success',
+                        title: data.message
+                    })
+                    this.files       = data.data.files
+                    this.directories = data.data.directories
+                } else {
+                    Toast.fire({
+                        icon : 'error',
+                        title: data.message
+                    })
+                }
+            }).catch((error) => {
+                let errors = error.response.data.errors;
+                Object.entries(errors).forEach(([key, value]) => {
+                    Toast.fire({
+                        icon : 'error',
+                        title: value
+                    })
+                })
+            })
+        },
         downloadFile(url, ext) {
             if (!url) {
                 alert('Please provide url to download.');
@@ -170,6 +266,44 @@ export default {
                 toastr.error(error.response.statusText);
             });
         },
+        submitCopyMoveForm() {
+            axios.post('/change-directory', {
+                'targetDir'     : this.targetDir,
+                'selectedDir'   : this.selectedDir,
+                'currentDir'    : this.currentDir,
+                'changeType'    : this.changeType,
+                'changeFileType': this.changeFileType,
+            }).then(({data}) => {
+                if (data.status) {
+                    Toast.fire({
+                        icon : 'success',
+                        title: data.message
+                    })
+                    this.files       = data.data.files
+                    this.directories = data.data.directories
+                    this.$refs.Close.click();
+                } else {
+                    Toast.fire({
+                        icon : 'error',
+                        title: data.message
+                    })
+                }
+            }).catch((error) => {
+                let errors = error.response.data.errors;
+                Object.entries(errors).forEach(([key, value]) => {
+                    Toast.fire({
+                        icon : 'error',
+                        title: value
+                    })
+                })
+            })
+        },
+        closeCopyMoveModal() {
+            this.changeType     = ''
+            this.changeFileType = ''
+            this.targetDir      = ''
+            this.selectedDir    = ''
+        }
     }
 }
 </script>
