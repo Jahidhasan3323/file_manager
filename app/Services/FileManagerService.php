@@ -5,10 +5,12 @@ namespace App\Services;
 
 
 use App\Http\Controllers\FileManager;
+use App\Rules\FileManagerFileUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -37,11 +39,18 @@ class FileManagerService
     {
         $type = $requestData['type'] ?? 'directories';
         $isRoot = (boolean)($requestData['isRoot'] ?? true);
+        $this->configData($requestData);
+        return $this->getData($type, $isRoot);
+    }
+
+    /**
+     * @param $requestData
+     */
+    private function configData($requestData){
         $this->relativePath = trim($requestData['relativePath'] ?? '/', '/');
         $this->perPage = $requestData['per_page'] ?? $this->perPage;
         $this->sortBy = $requestData['sort'] ?? $this->sortBy;
         $this->searchString = $requestData['search'] ?? $this->searchString;
-        return $this->getData($type, $isRoot);
     }
 
     public function getData($type = 'all', $isRoot = false)
@@ -257,5 +266,41 @@ class FileManagerService
         $this->sort();
 
         return $this;
+    }
+
+    public function uploadFile($request)
+    {
+        $file = $request->file;
+        $this->relativePath = $request->relativePath == '/' ? '' : $request->relativePath;
+
+        if (!Storage::disk($this->disc)->exists("chunks")) {
+            Storage::disk($this->disc)->makeDirectory("chunks");
+        }
+        if ($request->has('is_first') && $request->boolean('is_first')) {
+            Storage::disk($this->disc)->delete("chunks/{$file->getClientOriginalName()}");
+        }
+        $path = Storage::disk($this->disc)->path("chunks/{$file->getClientOriginalName()}");
+        File::append($path, $file->get());
+
+        if ($request->has('is_last') && $request->boolean('is_last')) {
+            $this->convertToMainFile($path);
+        }
+
+    }
+
+    public function deleteFile($deletedDir, $requestData)
+    {
+        $this->configData($requestData);
+        try {
+            if (Storage::disk($this->disc)->exists($deletedDir)) {
+                Storage::disk($this->disc)->delete($deletedDir);
+                $response = $this->getData();
+                return response()->json(['data' => $response, 'status' => true, 'message' => 'File deleted successfully']);
+            } else {
+                return response()->json(['status' => false, 'message' => 'File dose not exists']);
+            }
+        } catch (\Exception $e) {
+            return ['status' => false, 'message' => $e->getMessage()];
+        }
     }
 }

@@ -135,7 +135,7 @@
                                             </button>
                                             <!--                                            <button class="btn btn-info btn-sm">view</button>-->
                                             <button class="btn btn-danger btn-sm"
-                                                    @click="deleteFile(item.relativePath)">
+                                                    @click="page=1;deleteFile(item.relativePath)">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
@@ -294,6 +294,10 @@ export default {
                 params: {
                     'relativePath': relativePath,
                     'currentDir'  : this.currentDir,
+                    per_page      : this.per_page,
+                    page          : this.current_page,
+                    sort          : this.sort,
+                    search        : this.search
                 }
             }).then(({data}) => {
                 if (data.status) {
@@ -301,8 +305,7 @@ export default {
                         icon : 'success',
                         title: data.message
                     })
-                    this.files       = data.data.files
-                    this.directories = data.data.directories
+                    this.getData(1);
                 } else {
                     Toast.fire({
                         icon : 'error',
@@ -359,8 +362,7 @@ export default {
                         icon : 'success',
                         title: data.message
                     })
-                    this.files       = data.data.files
-                    this.directories = data.data.directories
+                    this.getData()
                     this.$refs.Close.click();
                 } else {
                     Toast.fire({

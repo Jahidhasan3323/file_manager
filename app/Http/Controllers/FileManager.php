@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Rules\FileManagerFileUpload;
 use App\Services\FileManagerService;
+use http\Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -16,13 +17,8 @@ use Illuminate\Validation\ValidationException;
 
 class FileManager extends Controller
 {
-    private $response;
     private $relativePath;
     private $disc;
-    private $perPage = 2;
-    private $page = null;
-    private $sortBy = 'asc';
-    private $searchString = '';
     private $rootPath;
 
     public function __construct()
@@ -49,22 +45,7 @@ class FileManager extends Controller
      */
     public function uploadFile(Request $request): JsonResponse
     {
-        $file = $request->file('file');
-        $this->relativePath = $request->post('relativePath') == '/' ? '' : $request->post('relativePath');
-        $this->validate($request, ['file' => new FileManagerFileUpload]);
-
-        if (!Storage::disk($this->disc)->exists("chunks")) {
-            Storage::disk($this->disc)->makeDirectory("chunks");
-        }
-        if ($request->has('is_first') && $request->boolean('is_first')) {
-            Storage::disk($this->disc)->delete("chunks/{$file->getClientOriginalName()}");
-        }
-        $path = Storage::disk($this->disc)->path("chunks/{$file->getClientOriginalName()}");
-        File::append($path, $file->get());
-
-        if ($request->has('is_last') && $request->boolean('is_last')) {
-            $this->convertToMainFile($path);
-        }
+        (new FileManagerService())->uploadFile($request);
         return response()->json(['uploaded' => true]);
     }
 
@@ -74,19 +55,8 @@ class FileManager extends Controller
      */
     public function deleteFile(Request $request)
     {
-        $this->relativePath = $request->post('currentDir');
         $deletedDir = $request->post('relativePath');
-        try {
-            if (Storage::disk($this->disc)->exists($deletedDir)) {
-                Storage::disk($this->disc)->delete($deletedDir);
-                $response = $this->getData();
-                return response()->json(['data' => $response, 'status' => true, 'message' => 'File deleted successfully']);
-            } else {
-                return response()->json(['status' => false, 'message' => 'File dose not exists']);
-            }
-        } catch (\Exception $e) {
-            return ['status' => false, 'message' => $e->getMessage()];
-        }
+        return (new FileManagerService())->deleteFile($deletedDir, $request);
     }
 
     /**
@@ -124,7 +94,7 @@ class FileManager extends Controller
                         break;
                     }
                 }
-                $response = $this->getData();
+                $response = [];
                 return response()->json(['data' => $response, 'status' => true, 'message' => "{$changeFileType} {$changeType} successfully"]);
             } else {
                 return response()->json(['status' => false, 'message' => "{$changeFileType} dose not exists"]);
@@ -139,13 +109,11 @@ class FileManager extends Controller
      */
     private function copyDirectory($targetDir, $selectedDir)
     {
-//        TODO::copy directory is already exist check
-//        dd($this->rootPath.'/'.$targetDir);
-        if (!Storage::disk($this->disc)->exists($targetDir.'/'.$selectedDir)) {
-            Storage::disk($this->disc)->makeDirectory($targetDir.'/'.$selectedDir);
-            File::copyDirectory($this->rootPath . '/' . $selectedDir, $this->rootPath . '/' . $targetDir .'/'. $selectedDir);
-        }else{
-            return response()->json(['status' => false, 'message' => "directory already exists"]);
+        if (!Storage::disk($this->disc)->exists($targetDir . '/' . $selectedDir)) {
+            Storage::disk($this->disc)->makeDirectory($targetDir . '/' . $selectedDir);
+            File::copyDirectory($this->rootPath . '/' . $selectedDir, $this->rootPath . '/' . $targetDir . '/' . $selectedDir);
+        } else {
+            throw new \ErrorException('Directory already exist');
         }
 
     }
