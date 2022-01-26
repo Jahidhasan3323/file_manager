@@ -5585,7 +5585,11 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       axios.get('/delete-file', {
         params: {
           'relativePath': relativePath,
-          'currentDir': this.currentDir
+          'currentDir': this.currentDir,
+          per_page: this.per_page,
+          page: this.current_page,
+          sort: this.sort,
+          search: this.search
         }
       }).then(function (_ref5) {
         var data = _ref5.data;
@@ -5595,8 +5599,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
             icon: 'success',
             title: data.message
           });
-          _this3.files = data.data.files;
-          _this3.directories = data.data.directories;
+
+          _this3.getData(1);
         } else {
           Toast.fire({
             icon: 'error',
@@ -5662,8 +5666,8 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
             icon: 'success',
             title: data.message
           });
-          _this4.files = data.data.files;
-          _this4.directories = data.data.directories;
+
+          _this4.getData();
 
           _this4.$refs.Close.click();
         } else {
@@ -6063,6 +6067,9 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
   mounted: function mounted() {},
   methods: {
     closeDirModal: function closeDirModal() {
+      // TODO::remove file list from dropzon
+      // this.$refs.fileUpload.removeAllFiles(false)
+      this.$parent.getData(1);
       this.afterUpload();
     },
     removeFile: function removeFile(file, error, xhr) {
@@ -49040,7 +49047,8 @@ var render = function () {
                                 staticClass: "btn btn-danger btn-sm",
                                 on: {
                                   click: function ($event) {
-                                    return _vm.deleteFile(item.relativePath)
+                                    _vm.page = 1
+                                    _vm.deleteFile(item.relativePath)
                                   },
                                 },
                               },

@@ -156,6 +156,9 @@ export default {
     methods   : {
 
         closeDirModal() {
+            // TODO::remove file list from dropzon
+            // this.$refs.fileUpload.removeAllFiles(false)
+            this.$parent.getData(1)
             this.afterUpload()
         },
         removeFile(file, error, xhr){
