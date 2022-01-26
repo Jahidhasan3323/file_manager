@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Rules\FileManagerFileUpload;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -15,10 +18,16 @@ class FileManager extends Controller
     private $response;
     private $relativePath;
     private $disc;
+    private $perPage = 2;
+    private $page = null;
+    private $sortBy = 'asc';
+    private $searchString = '';
+    private $rootPath;
 
     public function __construct()
     {
         $this->disc = config('filesystems.disks.local.driver');
+        $this->rootPath = config('filesystems.disks.local.root');
     }
 
     /**
@@ -29,6 +38,9 @@ class FileManager extends Controller
         $type = request()->post('type') ?? 'directories';
         $isRoot = (boolean)(request()->post('isRoot') ?? true);
         $this->relativePath = trim(request()->get('relativePath') ?? '/', '/');
+        $this->perPage = request()->get('per_page') ?? $this->perPage;
+        $this->sortBy = request()->get('sort') ?? $this->sortBy;
+        $this->searchString = request()->get('search') ?? $this->searchString;
         $response = $this->getData($type, $isRoot);
         return response()->json([$response]);
     }
@@ -37,7 +49,8 @@ class FileManager extends Controller
     {
         $disc = $this->disc;
 
-        $response = $this->getFromStorage($disc, $type)->addOptions();
+        $response = $this->getFromStorage($disc, $type)->filter()->addOptions();
+//        dd($response);
         if ($isRoot) $response = $response->addRootOptions();
         return $response->getResponse();
 
@@ -136,7 +149,6 @@ class FileManager extends Controller
         $this->response = [
             "relativePath" => '/',
             "text"         => "Storage",
-            "icon"         => "fa fa-hdd text-warning",
             "state"        => [
                 "opened" => true
             ],
@@ -173,6 +185,9 @@ class FileManager extends Controller
      */
     public function getResponse()
     {
+        $this->response['files'] = $this->paginate($this->response['files']);
+        $this->response['directories'] = $this->response['directories']
+            ?? ['data' => []];
         return $this->response;
     }
 
@@ -367,8 +382,15 @@ class FileManager extends Controller
      */
     private function copyDirectory($targetDir, $selectedDir)
     {
-//        TODO::copy directory not working
-        Storage::disk($this->disc)->copy($selectedDir, $targetDir . '/' . $selectedDir);
+//        TODO::copy directory is already exist check
+//        dd($this->rootPath.'/'.$targetDir);
+        if (!Storage::disk($this->disc)->exists($targetDir.'/'.$selectedDir)) {
+            Storage::disk($this->disc)->makeDirectory($targetDir.'/'.$selectedDir);
+            File::copyDirectory($this->rootPath . '/' . $selectedDir, $this->rootPath . '/' . $targetDir .'/'. $selectedDir);
+        }else{
+            return response()->json(['status' => false, 'message' => "directory already exists"]);
+        }
+
     }
 
     /**
@@ -386,7 +408,7 @@ class FileManager extends Controller
      */
     private function copyFile($targetDir, $selectedDir)
     {
-        Storage::disk($this->disc)->copy($this->relativePath.'/'.$selectedDir, $targetDir . '/' . $selectedDir);
+        Storage::disk($this->disc)->copy($this->relativePath . '/' . $selectedDir, $targetDir . '/' . $selectedDir);
     }
 
     /**
@@ -395,7 +417,7 @@ class FileManager extends Controller
      */
     private function moveFile($targetDir, $selectedDir)
     {
-        Storage::disk($this->disc)->move($this->relativePath.'/'.$selectedDir, $targetDir . '/' . $selectedDir);
+        Storage::disk($this->disc)->move($this->relativePath . '/' . $selectedDir, $targetDir . '/' . $selectedDir);
     }
 
     /**
@@ -423,5 +445,61 @@ class FileManager extends Controller
         $ext = end($array);
         $pathWithoutExt = str_replace(".{$ext}", rand(1, 1000), $name);
         return "{$pathWithoutExt}.{$ext}";
+    }
+
+    /**
+     * @param $items
+     * @param null $perPage
+     * @param null $page
+     * @param array $options
+     * @return LengthAwarePaginator
+     */
+    public function paginate($items, $perPage = null, $page = null, $options = [])
+    {
+        $this->perPage = $perPage ?? $this->perPage;
+        $this->page = $page ?? $this->page;
+        $this->page = $this->page ?: (Paginator::resolveCurrentPage() ?: 1);
+        $items = $items instanceof Collection ? $items : Collection::make($items);
+        return new LengthAwarePaginator($items->forPage($this->page, $this->perPage), $items->count(), $this->perPage, $this->page, $options);
+    }
+
+    /**
+     * @return $this
+     */
+    private function sort()
+    {
+        $files = collect($this->response['files']);
+        $files = $files->sort();
+        $files = $this->sortBy !== 'asc' ? $files->reverse() : $files;
+        $this->response['files'] = $files->toArray();
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    private function search()
+    {
+        $files = collect($this->response['files']);
+        $files = $files->filter(function ($item) {
+            return stripos($item, $this->searchString) !== false;
+        });
+        $this->response['files'] = $files->toArray();
+
+        return $this;
+    }
+
+    /**
+     * @return $this
+     */
+    private function filter()
+    {
+        if ($this->searchString) {
+            $this->search();
+        }
+        $this->sort();
+
+        return $this;
     }
 }

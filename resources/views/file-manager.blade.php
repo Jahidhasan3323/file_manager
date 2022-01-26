@@ -13,7 +13,6 @@
         <div class="card card-fluid">
             <!-- .card-body -->
             <div class="card-body">
-                <h4 class="card-title"> Filemanager </h4><!-- #jstree3 -->
                 <div id="jstreeFilemanager"></div><!-- /#jstree3 -->
                 <div id="app">
                     <example-component></example-component>

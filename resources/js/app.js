@@ -2,7 +2,7 @@ import Vue from 'vue';
 import VueLazyload from 'vue-lazyload'
 window.Vue = require('vue').default;
 require('./bootstrap');
-
+Vue.component('pagination', require('laravel-vue-pagination'));
 Vue.use(VueLazyload)
 //sweetalert2
 import Swal from 'sweetalert2'

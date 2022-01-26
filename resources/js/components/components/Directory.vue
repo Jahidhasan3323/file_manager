@@ -1,9 +1,9 @@
 <template>
     <div>
 
-        <button type="button" class="btn btn-info" data-target="#directoryModal" data-toggle="modal"
-                data-backdrop="static" data-keyboard="false">
-            Create Directory
+        <button type="button" class="btn btn-default btn-sm" data-target="#directoryModal" data-toggle="modal"
+                data-backdrop="static" data-keyboard="false" title="Create Directory">
+            <i class="fas fa-folder-plus"></i>
         </button>
         <!-- Modal -->
         <div class="modal fade" id="directoryModal">

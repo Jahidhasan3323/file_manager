@@ -3,19 +3,38 @@
         <div class="row justify-content-center">
             <div class="col-md-10">
                 <div class="card">
-                    <div class="card-header">
-                        <button @click="getData('/')" class="btn btn-info">Root</button>
-                        <button @click="getData(prevDir)" class="btn btn-info">Previous</button>
-                        <file-upload class="float-right"></file-upload>
-                        <directory class="float-right mr-1" ref="header"></directory>
-                    </div>
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-4">
+                                <div class="border d-flex justify-content-between mb-2 px-2 py-2">
+                                    <div class="w-100 d-flex gap-2">
+                                        <nav aria-label="breadcrumb">
+                                            <ol class="breadcrumb mb-0 py-1">
+                                                <li class="breadcrumb-item active" aria-current="page"
+                                                    @click="relativePath = '/'; getData(1)"
+                                                    style="cursor:pointer">
+                                                    <i class="fas fa-folder-open"></i> Root
+                                                </li>
+                                                <template v-if="relativePath != '/'">
+                                                    <li class="breadcrumb-item active" aria-current="page"
+                                                        @click="relativePath = path; getData(1)"
+                                                        v-for="path in relativePath.split('/')" style="cursor:pointer">
+                                                        {{ path }}
+                                                    </li>
+                                                </template>
+                                            </ol>
+                                        </nav>
+                                    </div>
+                                </div>
                                 <ul class="list-group" v-if="directories.length > 0">
                                     <li v-for="directory in directories" class="list-group-item">
                                         <span style="cursor: pointer"
-                                              @click="getData(directory.relativePath)">{{ directory.text }}</span>
+                                              @click="relativePath = directory.relativePath; getData(1)">
+                                            <i class="fas fa-folder text-warning"></i>
+                                            {{
+                                                directory.text
+                                            }}
+                                        </span>
                                         <span @click="deleteDir(directory.relativePath)" class="float-end"><label
                                             class="badge badge-danger mr-1" title="delete"><i class="fas fa-trash"></i></label></span>
 
@@ -44,48 +63,88 @@
                                 </ul>
                             </div>
                             <div class="col-md-8">
+                                <div class="border d-flex justify-content-between mb-2 px-2 py-2">
+                                    <div class="d-flex">
+                                        <button @click="getData(1)" type="button" class="btn btn-default btn-sm mx-1"
+                                                title="Refresh">
+                                            <i :class="`fas fa-sync ${loading ? 'fa-pulse' : ''}`"></i>
+                                        </button>
+                                        <file-upload class="mx-1 "></file-upload>
+                                        <directory class="mx-1" ref="header"></directory>
+                                    </div>
+
+                                    <div class="d-flex gap-1">
+                                        <label for="search_"
+                                               class="d-flex text-sm font-weight-normal align-items-center m-0">
+                                            Search:&nbsp;
+                                            <input id="search_" v-model="search" class="form-control form-control-sm"
+                                                   placeholder="search here"/>
+                                        </label>
+                                        <label for="perPage_"
+                                               class="d-flex text-sm font-weight-normal align-items-center m-0">
+                                            Show &nbsp;
+                                            <select id="perPage_" class="form-control form-control-sm"
+                                                    style="width: 40px;"
+                                                    title="Select items per page"
+                                                    v-model="per_page" @change="getData(1)">
+                                                <option class="3">3</option>
+                                                <option class="5">5</option>
+                                                <option class="10">10</option>
+                                                <option class="25">25</option>
+                                                <option class="50">50</option>
+                                            </select>
+                                            &nbsp; items
+                                        </label>
+                                    </div>
+                                </div>
                                 <table class="table table-bordered">
                                     <thead>
                                     <tr>
                                         <th scope="col">#</th>
-                                        <th scope="col">Title</th>
-                                        <th scope="col">Type</th>
+                                        <th scope="col" @click="sort = sort=='asc' ? 'desc' : 'asc' ; getData(1);">
+                                            Title
+                                            <i :class="`fas fa-sort-amount-${sort=='asc' ? 'down':'up'}-alt`"></i>
+                                        </th>
                                         <th scope="col">Ext</th>
                                         <th scope="col">Action</th>
                                     </tr>
                                     </thead>
                                     <tbody>
-                                    <tr v-for="(item, index) in files">
-                                        <td>{{ index + 1 }}</td>
+                                    <tr v-for="(item, ind) in files.data">
+                                        <td>{{ parseInt(ind) + 1 }}</td>
                                         <td>{{ item.text }}</td>
-                                        <td>{{ item.icon }}</td>
                                         <td>{{ item.ext }}</td>
                                         <td>
-                                            <button class="btn btn-success"
+                                            <button class="btn btn-success btn-sm"
                                                     @click="downloadFile('storage/'+item.relativePath, item.ext)">
                                                 <i class="fas fa-download"></i>
                                             </button>
-                                            <button class="btn btn-primary"
-                                                    @click="changeType='copy'; changeFileType='file'; selectedDir=item.relativePath" data-toggle="modal"
+                                            <button class="btn btn-primary btn-sm"
+                                                    @click="changeType='copy'; changeFileType='file'; selectedDir=item.relativePath"
+                                                    data-toggle="modal"
                                                     data-target="#directoryCopyModal" data-backdrop="static"
                                                     data-keyboard="false" title="copy">
                                                 <i class="fas fa-copy "></i>
                                             </button>
-                                            <button class="btn btn-warning"
-                                                    @click="changeType='move'; changeFileType='file'; selectedDir=item.relativePath" data-toggle="modal"
+                                            <button class="btn btn-warning btn-sm"
+                                                    @click="changeType='move'; changeFileType='file'; selectedDir=item.relativePath"
+                                                    data-toggle="modal"
                                                     data-target="#directoryCopyModal" data-backdrop="static"
                                                     data-keyboard="false" title="move">
                                                 <i class="fas fa-arrows-alt text-white"></i>
                                             </button>
-                                            <button class="btn btn-info">view</button>
-                                            <button class="btn btn-danger"
+                                            <!--                                            <button class="btn btn-info btn-sm">view</button>-->
+                                            <button class="btn btn-danger btn-sm"
                                                     @click="deleteFile(item.relativePath)">
                                                 <i class="fas fa-trash"></i>
                                             </button>
                                         </td>
                                     </tr>
                                     </tbody>
+
                                 </table>
+                                <pagination :data="files" @pagination-change-page="getData" :limit="2"></pagination>
+
                             </div>
                         </div>
                     </div>
@@ -96,7 +155,8 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title text-capitalize" id="directoryModalLabel">{{ changeType }} {{ changeFileType }}</h5>
+                        <h5 class="modal-title text-capitalize" id="directoryModalLabel">{{ changeType }}
+                            {{ changeFileType }}</h5>
                         <button @click="closeCopyMoveModal" type="button" class="close" data-dismiss="modal"
                                 aria-label="Close">
                             <span aria-hidden="true">&times;</span>
@@ -128,6 +188,7 @@
 import Directory  from "./components/Directory";
 import FileUpload from "./components/FileUpload";
 
+
 export default {
     components: {
         FileUpload,
@@ -135,32 +196,51 @@ export default {
     },
     data() {
         return {
-            files         : [],
-            directories   : [],
+            files         : {data: []},
+            directories   : {data: []},
             isRoot        : false,
             prevDir       : '/',
             currentDir    : '',
             targetDir     : '',
             selectedDir   : '',
             changeType    : '',
-            changeFileType: ''
+            changeFileType: '',
+            per_page      : 5,
+            current_page  : 1,
+            relativePath  : '/',
+            loading       : true,
+            sort          : 'asc',
+            search        : '',
+            searchTimeOut : null
         }
     },
     mounted() {
         this.getData()
     },
     methods   : {
-        getData(relativePath = '/') {
+        getData(page = 1) {
+            this.loading      = true;
+            this.current_page = page;
+            let relativePath  = this.relativePath ?? "/";
             this.getPrevDir(relativePath);
             this.currentDir = relativePath;
             axios.post('/get-tree', {
-                'type'        : 'all',
-                'isRoot'      : this.isRoot,
-                'relativePath': relativePath
+                'type'  : this.current_page > 1 ? 'files' : 'all',
+                'isRoot': this.isRoot,
+                per_page: this.per_page,
+                relativePath,
+                page    : this.current_page,
+                sort    : this.sort,
+                search  : this.search
             }).then(({data}) => {
-                this.files       = data[0].files
-                this.directories = data[0].directories
-            })
+                this.files       = data[0].files;
+                //this.directories = data[0].directories
+                this.directories = this.current_page > 1
+                    ? this.directories
+                    : data[0].directories;
+            }).finally(() => {
+                this.loading = false;
+            });
         },
         getPrevDir(relativePath) {
             let relativePathArray = relativePath.split('/')
@@ -303,6 +383,14 @@ export default {
             this.changeFileType = ''
             this.targetDir      = ''
             this.selectedDir    = ''
+        }
+    },
+    watch     : {
+        search: function (old_val, new_val) {
+            clearTimeout(this.searchTimeOut);
+            this.searchTimeOut = setTimeout(() => {
+                this.getData();
+            }, 700)
         }
     }
 }

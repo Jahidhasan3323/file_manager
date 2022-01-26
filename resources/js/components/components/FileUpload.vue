@@ -1,8 +1,8 @@
 <template>
     <div>
-        <button type="button" class="btn btn-info" data-target="#fileModal" data-toggle="modal"
-                data-backdrop="static" data-keyboard="false">
-            Upload File
+        <button type="button" class="btn btn-default btn-sm" data-target="#fileModal" data-toggle="modal"
+                data-backdrop="static" data-keyboard="false" title="Upload File">
+            <i class="fas fa-upload"></i>
         </button>
 
         <!-- Modal -->
@@ -163,13 +163,7 @@ export default {
         },
         uploadImageSuccess(fileList) {
             $(".dz-progress").remove();
-            // TODO::disable dropzone when one file is uploading
-            // if(!this.progress >=0 && this.progress < 100){
-            //     Toast.fire({
-            //         icon : 'error',
-            //         title: 'Already a file inprogress'
-            //     })
-            // }
+            this.$refs.fileUpload.removeEventListeners()
             Object.entries(fileList).forEach(ele => {
                 this.selectedFile = ele[1]
                 // console.log(formData, fileList, '1', fileList[0].isUploaded)
@@ -211,6 +205,7 @@ export default {
             this.uploaded        = 0
             this.totalChunksSize = 0
             this.selectedFile    = {}
+            this.$refs.fileUpload.setupEventListeners()
         },
         cancelUpload(errors) {
             Object.entries(errors).forEach(([key, value]) => {
