@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Backend\DashboardController;
+use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\FileManager;
 use Illuminate\Support\Facades\Route;
 
@@ -20,14 +21,14 @@ Route::get('/', function () {
     return view('file-manager');
 });
 
-Route::match(['get', 'post'], '/get-directories', [FileManager::class, 'getDirectories']);
-Route::match(['get', 'post'], '/get-files', [FileManager::class, 'getFiles']);
-Route::match(['get', 'post'], '/get-files-directories', [FileManager::class, 'getFilesDirectories']);
+//Route::match(['get', 'post'], '/get-directories', [FileManager::class, 'getDirectories']);
+//Route::match(['get', 'post'], '/get-files', [FileManager::class, 'getFiles']);
+//Route::match(['get', 'post'], '/get-files-directories', [FileManager::class, 'getFilesDirectories']);
 
 Route::match(['get', 'post'], '/get-tree', [FileManager::class, 'getTree']);
-Route::match(['post'], '/make-directory', [FileManager::class, 'makeDir']);
-Route::get('delete-directory',[FileManager::class, 'deleteDir']);
-Route::post('rename-directory',[FileManager::class, 'renameDir']);
+Route::match(['post'], '/make-directory', [DirectoryController::class, 'makeDir']);
+Route::get('delete-directory',[DirectoryController::class, 'deleteDir']);
+Route::post('rename-directory',[DirectoryController::class, 'renameDir']);
 Route::post('upload-file',[FileManager::class, 'uploadFile']);
 Route::get('delete-file',[FileManager::class, 'deleteFile']);
 Route::post('change-directory',[FileManager::class, 'changeDir']);
