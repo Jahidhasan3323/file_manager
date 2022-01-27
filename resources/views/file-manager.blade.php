@@ -15,7 +15,7 @@
             <div class="card-body">
                 <div id="jstreeFilemanager"></div><!-- /#jstree3 -->
                 <div id="app">
-                    <example-component></example-component>
+                    <example-component :max-file-size="{{$max_file_size}}"></example-component:>
                 </div>
             </div><!-- /.card-body -->
         </div><!-- /.card -->

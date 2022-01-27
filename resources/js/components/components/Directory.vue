@@ -75,8 +75,8 @@ export default {
                         icon : 'success',
                         title: data.message
                     })
-                    this.$parent.files       = data.data.files
-                    this.$parent.directories = data.data.directories
+                    this.$parent.getData()
+
                 } else {
                     Toast.fire({
                         icon : 'error',

@@ -18,21 +18,7 @@
                     </div>
                     <div class="modal-body">
                         <form v-on:submit.prevent>
-                            <!--                            <vue-upload-multiple-image
-                                                            dragText="Drag an image here"
-                                                            browseText=""
-                                                            @upload-success="uploadImageSuccess"
-                                                            @before-remove="beforeRemove"
-                                                            :data-images="images"
-                                                            idUpload="myIdUpload"
-                                                            editUpload="myIdEdit"
-                                                            :disabled="isUploading"
-                                                            dropText="drop your image here"
-                                                            ref="image"
-                                                            :showPrimary=false
-                                                            :showEdit=false
-                                                            accept="all"
-                                                        ></vue-upload-multiple-image>-->
+
                             <vue-dropzone
                                 ref="fileUpload"
                                 id="dropzone"
@@ -82,38 +68,15 @@ export default {
                 url             : 'no-url',
                 thumbnailWidth  : 150,
                 maxFilesize     : 0.5,
-                addRemoveLinks  : true,
-                headers         : {'Content-Type': 'application/octet-stream'}
+                maxFiles        : 1,
+                // acceptedFiles   : 'image/*',
+                addRemoveLinks: true,
+                headers       : {'Content-Type': 'application/octet-stream'}
             },
-            options        : {
-                text    : {
-                    color          : '#FFFFFF',
-                    shadowEnable   : true,
-                    shadowColor    : '#000000',
-                    fontSize       : 14,
-                    fontFamily     : 'Helvetica',
-                    dynamicPosition: false,
-                    hideText       : false
-                },
-                progress: {
-                    color          : '#2dbd2d',
-                    backgroundColor: '#333333',
-                    inverted       : false
-                },
-                layout  : {
-                    height             : 35,
-                    width              : 140,
-                    verticalTextAlign  : 61,
-                    horizontalTextAlign: 43,
-                    zeroOffset         : 0,
-                    strokeWidth        : 30,
-                    progressPadding    : 0,
-                    type               : 'line'
-                }
-            }
+            options        : {}
         }
     },
-    computed  : {
+    computed: {
         progress() {
             if (this.totalChunksSize > 0 && this.file) {
                 let progress = Math.floor((this.uploaded * 100) / this.totalChunksSize)
@@ -153,7 +116,7 @@ export default {
     mounted() {
 
     },
-    methods   : {
+    methods: {
 
         closeDirModal() {
             // TODO::remove file list from dropzon
@@ -161,8 +124,8 @@ export default {
             this.$parent.getData(1)
             this.afterUpload()
         },
-        removeFile(file, error, xhr){
-            this.$parent.deleteApiCall(this.$parent.currentDir+'/'+file.name)
+        removeFile(file, error, xhr) {
+            this.$parent.deleteApiCall(this.$parent.currentDir + '/' + file.name)
         },
         uploadImageSuccess(fileList) {
             $(".dz-progress").remove();
@@ -211,13 +174,13 @@ export default {
             this.$refs.fileUpload.setupEventListeners()
         },
         cancelUpload(errors) {
+            //this.$refs.fileUpload.removeFile(this.selectedFile)
             Object.entries(errors).forEach(([key, value]) => {
                 Toast.fire({
                     icon : 'error',
                     title: value
                 })
             })
-            this.$refs.fileUpload.removeFile(this.selectedFile)
             this.selectedFile = {}
         },
         select(event) {
@@ -272,7 +235,7 @@ export default {
             return blob;
         }
     },
-    watch     : {
+    watch  : {
         chunks(n, o) {
             if (n.length > 0) {
                 this.upload();

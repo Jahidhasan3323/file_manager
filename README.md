@@ -20,7 +20,7 @@ Copy the example env file and make the required configuration changes in the .en
 
 set `ALLOWED_FILE_EXTENSION` for allowed file type ```.env```
 
-set `ALLOWED_FILE_size` for allowed file max size ```.env```
+set `MAX_FILE_size` for allowed file max size ```.env```
 
 Generate a new application key
 

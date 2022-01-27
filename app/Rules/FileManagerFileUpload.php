@@ -26,11 +26,11 @@ class FileManagerFileUpload implements Rule
     public function passes($attribute, $value)
     {
         $allowed_file_extension = config('filesystems.allowed_file_extension');
-        $allowed_file_size = config('filesystems.allowed_file_size');
+        $max_file_size = config('filesystems.max_file_size');
         $fileWithExt = basename($value->getClientOriginalName(), '.part');
         $array = explode('.', $fileWithExt);
         $fileExt = end($array);
-        if($value->getSize() <= $allowed_file_size && in_array($fileExt,$allowed_file_extension)){
+        if($value->getSize() <= $max_file_size && in_array($fileExt,$allowed_file_extension)){
             return true;
         }else{
             return false;

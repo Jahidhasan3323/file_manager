@@ -27,7 +27,9 @@ class FileManager extends Controller
         $this->rootPath = config('filesystems.disks.local.root');
     }
 
+
     /**
+     * @param Request $request
      * @return JsonResponse
      */
     public function getTree(Request $request): JsonResponse
@@ -45,6 +47,7 @@ class FileManager extends Controller
      */
     public function uploadFile(Request $request): JsonResponse
     {
+        $this->validate($request, ['file' => new FileManagerFileUpload]);
         (new FileManagerService())->uploadFile($request);
         return response()->json(['uploaded' => true]);
     }

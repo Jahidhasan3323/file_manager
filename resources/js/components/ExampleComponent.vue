@@ -190,6 +190,12 @@ import FileUpload from "./components/FileUpload";
 
 
 export default {
+    props:{
+        maxFileSize:{
+            type:Number,
+            default:100
+        },
+    },
     components: {
         FileUpload,
         Directory

@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     //return view('welcome');
-    return view('file-manager');
+    $max_file_size = config('filesystems.max_file_size');
+    return view('file-manager',['max_file_size'=>$max_file_size]);
 });
 
 //Route::match(['get', 'post'], '/get-directories', [FileManager::class, 'getDirectories']);

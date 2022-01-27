@@ -53,6 +53,11 @@ class FileManagerService
         $this->searchString = $requestData['search'] ?? $this->searchString;
     }
 
+    /**
+     * @param $type
+     * @param $isRoot
+     * @return mixed
+     */
     public function getData($type = 'all', $isRoot = false)
     {
         $disc = $this->disc;
@@ -237,7 +242,6 @@ class FileManagerService
         $files = $files->sort();
         $files = $this->sortBy !== 'asc' ? $files->reverse() : $files;
         $this->response['files'] = $files->toArray();
-
         return $this;
     }
 
@@ -268,6 +272,10 @@ class FileManagerService
         return $this;
     }
 
+    /**
+     * @param $request
+     * @return void
+     */
     public function uploadFile($request)
     {
         $file = $request->file;
@@ -288,6 +296,11 @@ class FileManagerService
 
     }
 
+    /**
+     * @param $deletedDir
+     * @param $requestData
+     * @return array|JsonResponse
+     */
     public function deleteFile($deletedDir, $requestData)
     {
         $this->configData($requestData);
