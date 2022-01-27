@@ -19,9 +19,12 @@
                     <div class="modal-body">
                         <form v-on:submit.prevent>
                             <template v-if="files.length > 0">
-                                <p v-for="(item, index) in files">{{item.name}} <span class="badge badge-danger" @click="removeFile(item, index)"><i class="fas fa-times"></i></span></p>
+                                <p v-for="(item, index) in files">{{ item.name }} <span class="badge badge-danger"
+                                                                                        @click="removeFile(item, index)"><i
+                                    class="fas fa-times"></i></span></p>
                             </template>
-                            <input ref="fileUpload" type="file" class="form-control" @change="uploadImageSuccess" :disabled="isUploading">
+                            <input ref="fileUpload" type="file" class="form-control" @change="uploadImageSuccess"
+                                   :disabled="isUploading">
                             <progress-bar v-if="progress > 0" :options="options" :value="progress"/>
                         </form>
                     </div>
@@ -44,6 +47,12 @@ import vue2Dropzone           from 'vue2-dropzone'
 import 'vue2-dropzone/dist/vue2Dropzone.min.css'
 
 export default {
+    props     : {
+        maxFileSize: {
+            type     : Number,
+            "default": 100
+        }
+    },
     name      : "FileUpload",
     components: {
         VueUploadMultipleImage,
@@ -67,8 +76,8 @@ export default {
                 maxFilesize     : 0.5,
                 maxFiles        : 1,
                 acceptedFiles   : 'image/*',
-                addRemoveLinks: true,
-                headers       : {'Content-Type': 'application/octet-stream'}
+                addRemoveLinks  : true,
+                headers         : {'Content-Type': 'application/octet-stream'}
             },
             options        : {}
         }
@@ -126,13 +135,12 @@ export default {
         },
         uploadImageSuccess() {
 
-            this.isUploading=true
-            this.file = this.$refs.fileUpload.files[0]
-            // TODO::chhek with props
-            if(this.file.size >46144795){
+            this.isUploading = true
+            this.file        = this.$refs.fileUpload.files[0]
+            if (this.file.size > this.maxFileSize) {
                 Toast.fire({
-                    icon: 'error',
-                    title: 'File size must be greater than 1kb'
+                    icon : 'error',
+                    title: '`File size must be greater than ${this.maxFileSize}`'
                 })
                 return
             }
@@ -147,13 +155,13 @@ export default {
         },
         afterUpload() {
             this.files.push(this.$refs.fileUpload.files[0])
-            this.$refs.fileUpload.value= null
-            this.isUploading     = false
-            this.file            = null
-            this.chunks          = []
-            this.uploaded        = 0
-            this.totalChunksSize = 0
-            this.selectedFile    = {}
+            this.$refs.fileUpload.value = null
+            this.isUploading            = false
+            this.file                   = null
+            this.chunks                 = []
+            this.uploaded               = 0
+            this.totalChunksSize        = 0
+            this.selectedFile           = {}
         },
         cancelUpload(errors) {
             Object.entries(errors).forEach(([key, value]) => {
@@ -163,7 +171,7 @@ export default {
                 })
             })
             this.selectedFile = {}
-            this.isUploading=false
+            this.isUploading  = false
         },
         select(event) {
             this.file = event.target.files.item(0);
