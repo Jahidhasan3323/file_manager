@@ -74,7 +74,7 @@ class FileManager extends Controller
         $changeType = $request->post('changeType');
         $changeFileType = $request->post('changeFileType');
         try {
-            if (Storage::disk($this->disc)->exists($targetDir)) {
+            if (!Storage::disk($this->disc)->exists($targetDir . '/' . $selectedDir)) {
                 switch ([$changeFileType, $changeType]) {
                     case ['directory', 'copy'] :
                     {
