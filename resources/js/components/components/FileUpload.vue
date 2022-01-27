@@ -18,14 +18,10 @@
                     </div>
                     <div class="modal-body">
                         <form v-on:submit.prevent>
-
-                            <vue-dropzone
-                                ref="fileUpload"
-                                id="dropzone"
-                                :options="dropzoneOptions"
-                                @vdropzone-files-added="uploadImageSuccess"
-                                @vdropzone-removed-file="removeFile"
-                            ></vue-dropzone>
+                            <template v-if="files.length > 0">
+                                <p v-for="(item, index) in files">{{item.name}} <span class="badge badge-danger" @click="removeFile(item, index)"><i class="fas fa-times"></i></span></p>
+                            </template>
+                            <input ref="fileUpload" type="file" class="form-control" @change="uploadImageSuccess" :disabled="isUploading">
                             <progress-bar v-if="progress > 0" :options="options" :value="progress"/>
                         </form>
                     </div>
@@ -58,6 +54,7 @@ export default {
         return {
             images         : [],
             isUploading    : false,
+            files          : [],
             file           : null,
             selectedFile   : {},
             chunks         : [],
@@ -69,7 +66,7 @@ export default {
                 thumbnailWidth  : 150,
                 maxFilesize     : 0.5,
                 maxFiles        : 1,
-                // acceptedFiles   : 'image/*',
+                acceptedFiles   : 'image/*',
                 addRemoveLinks: true,
                 headers       : {'Content-Type': 'application/octet-stream'}
             },
@@ -119,43 +116,27 @@ export default {
     methods: {
 
         closeDirModal() {
-            // TODO::remove file list from dropzon
-            // this.$refs.fileUpload.removeAllFiles(false)
             this.$parent.getData(1)
             this.afterUpload()
+            this.files = []
         },
-        removeFile(file, error, xhr) {
+        removeFile(file, index) {
+            this.files.splice(index, 1)
             this.$parent.deleteApiCall(this.$parent.currentDir + '/' + file.name)
         },
-        uploadImageSuccess(fileList) {
-            $(".dz-progress").remove();
-            this.$refs.fileUpload.removeEventListeners()
-            Object.entries(fileList).forEach(ele => {
-                this.selectedFile = ele[1]
-                // console.log(formData, fileList, '1', fileList[0].isUploaded)
-                const fileUrl     = setInterval(() => {
-                    if (ele[1].dataURL) {
-                        // TODO::need to upload multiple image
-                        if (ele[1].status === "queued") {
-                            this.isUploading = true
-                            var ImageURL     = ele[1].dataURL
-                            // Split the base64 string in data and contentType
-                            var block        = ImageURL.split(";");
-                            // Get the content type of the image
-                            var contentType  = block[0].split(":")[1];// In this case "image/gif"
-                            // get the real base64 content of the file
-                            var realData = block[1].split(",")[1];// In this case "R0lGODlhPQBEAPeoAJosM...."
-                            // Convert it to a blob to upload
-                            this.file      = this.b64toBlob(realData, contentType);
-                            this.file.name = ele[1].name
-                            this.createChunks();
-                        }
-                        ele[1].status = 'uploaded'
-                        clearInterval(fileUrl)
-                    }
-                }, 100)
-            })
-            // console.log(fileList, '2', fileList[0].isUploaded)
+        uploadImageSuccess() {
+
+            this.isUploading=true
+            this.file = this.$refs.fileUpload.files[0]
+            // TODO::chhek with props
+            if(this.file.size >46144795){
+                Toast.fire({
+                    icon: 'error',
+                    title: 'File size must be greater than 1kb'
+                })
+                return
+            }
+            this.createChunks();
         },
         beforeRemove(index, done, fileList) {
             var r = confirm("remove image")
@@ -165,16 +146,16 @@ export default {
             }
         },
         afterUpload() {
+            this.files.push(this.$refs.fileUpload.files[0])
+            this.$refs.fileUpload.value= null
             this.isUploading     = false
             this.file            = null
             this.chunks          = []
             this.uploaded        = 0
             this.totalChunksSize = 0
             this.selectedFile    = {}
-            this.$refs.fileUpload.setupEventListeners()
         },
         cancelUpload(errors) {
-            //this.$refs.fileUpload.removeFile(this.selectedFile)
             Object.entries(errors).forEach(([key, value]) => {
                 Toast.fire({
                     icon : 'error',
@@ -182,6 +163,7 @@ export default {
                 })
             })
             this.selectedFile = {}
+            this.isUploading=false
         },
         select(event) {
             this.file = event.target.files.item(0);

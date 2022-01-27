@@ -5952,10 +5952,6 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 //
 //
 //
-//
-//
-//
-//
  // vue progress bar
 
 
@@ -5972,6 +5968,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
     return {
       images: [],
       isUploading: false,
+      files: [],
       file: null,
       selectedFile: {},
       chunks: [],
@@ -5983,7 +5980,7 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
         thumbnailWidth: 150,
         maxFilesize: 0.5,
         maxFiles: 1,
-        // acceptedFiles   : 'image/*',
+        acceptedFiles: 'image/*',
         addRemoveLinks: true,
         headers: {
           'Content-Type': 'application/octet-stream'
@@ -6036,48 +6033,27 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
   mounted: function mounted() {},
   methods: {
     closeDirModal: function closeDirModal() {
-      // TODO::remove file list from dropzon
-      // this.$refs.fileUpload.removeAllFiles(false)
       this.$parent.getData(1);
       this.afterUpload();
+      this.files = [];
     },
-    removeFile: function removeFile(file, error, xhr) {
+    removeFile: function removeFile(file, index) {
+      this.files.splice(index, 1);
       this.$parent.deleteApiCall(this.$parent.currentDir + '/' + file.name);
     },
-    uploadImageSuccess: function uploadImageSuccess(fileList) {
-      var _this = this;
+    uploadImageSuccess: function uploadImageSuccess() {
+      this.isUploading = true;
+      this.file = this.$refs.fileUpload.files[0]; // TODO::chhek with props
 
-      $(".dz-progress").remove();
-      this.$refs.fileUpload.removeEventListeners();
-      Object.entries(fileList).forEach(function (ele) {
-        _this.selectedFile = ele[1]; // console.log(formData, fileList, '1', fileList[0].isUploaded)
+      if (this.file.size > 46144795) {
+        Toast.fire({
+          icon: 'error',
+          title: 'File size must be greater than 1kb'
+        });
+        return;
+      }
 
-        var fileUrl = setInterval(function () {
-          if (ele[1].dataURL) {
-            // TODO::need to upload multiple image
-            if (ele[1].status === "queued") {
-              _this.isUploading = true;
-              var ImageURL = ele[1].dataURL; // Split the base64 string in data and contentType
-
-              var block = ImageURL.split(";"); // Get the content type of the image
-
-              var contentType = block[0].split(":")[1]; // In this case "image/gif"
-              // get the real base64 content of the file
-
-              var realData = block[1].split(",")[1]; // In this case "R0lGODlhPQBEAPeoAJosM...."
-              // Convert it to a blob to upload
-
-              _this.file = _this.b64toBlob(realData, contentType);
-              _this.file.name = ele[1].name;
-
-              _this.createChunks();
-            }
-
-            ele[1].status = 'uploaded';
-            clearInterval(fileUrl);
-          }
-        }, 100);
-      }); // console.log(fileList, '2', fileList[0].isUploaded)
+      this.createChunks();
     },
     beforeRemove: function beforeRemove(index, done, fileList) {
       var r = confirm("remove image");
@@ -6087,16 +6063,16 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
       } else {}
     },
     afterUpload: function afterUpload() {
+      this.files.push(this.$refs.fileUpload.files[0]);
+      this.$refs.fileUpload.value = null;
       this.isUploading = false;
       this.file = null;
       this.chunks = [];
       this.uploaded = 0;
       this.totalChunksSize = 0;
       this.selectedFile = {};
-      this.$refs.fileUpload.setupEventListeners();
     },
     cancelUpload: function cancelUpload(errors) {
-      //this.$refs.fileUpload.removeFile(this.selectedFile)
       Object.entries(errors).forEach(function (_ref) {
         var _ref2 = _slicedToArray(_ref, 2),
             key = _ref2[0],
@@ -6108,30 +6084,31 @@ function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
         });
       });
       this.selectedFile = {};
+      this.isUploading = false;
     },
     select: function select(event) {
       this.file = event.target.files.item(0);
       this.createChunks();
     },
     upload: function upload() {
-      var _this2 = this;
+      var _this = this;
 
       axios(this.config).then(function (response) {
-        _this2.chunks.shift();
+        _this.chunks.shift();
 
-        _this2.uploaded = _this2.uploaded + 1;
+        _this.uploaded = _this.uploaded + 1;
 
-        if (_this2.chunks.length === 0) {
-          _this2.afterUpload();
+        if (_this.chunks.length === 0) {
+          _this.afterUpload();
         }
       })["catch"](function (error) {
         var _error$response, _error$response$data;
 
         var errors = error === null || error === void 0 ? void 0 : (_error$response = error.response) === null || _error$response === void 0 ? void 0 : (_error$response$data = _error$response.data) === null || _error$response$data === void 0 ? void 0 : _error$response$data.errors;
 
-        _this2.cancelUpload(errors);
+        _this.cancelUpload(errors);
 
-        _this2.afterUpload();
+        _this.afterUpload();
       });
     },
     createChunks: function createChunks() {
@@ -49430,13 +49407,31 @@ var render = function () {
                 },
               },
               [
-                _c("vue-dropzone", {
+                _vm.files.length > 0
+                  ? _vm._l(_vm.files, function (item, index) {
+                      return _c("p", [
+                        _vm._v(_vm._s(item.name) + " "),
+                        _c(
+                          "span",
+                          {
+                            staticClass: "badge badge-danger",
+                            on: {
+                              click: function ($event) {
+                                return _vm.removeFile(item, index)
+                              },
+                            },
+                          },
+                          [_c("i", { staticClass: "fas fa-times" })]
+                        ),
+                      ])
+                    })
+                  : _vm._e(),
+                _vm._v(" "),
+                _c("input", {
                   ref: "fileUpload",
-                  attrs: { id: "dropzone", options: _vm.dropzoneOptions },
-                  on: {
-                    "vdropzone-files-added": _vm.uploadImageSuccess,
-                    "vdropzone-removed-file": _vm.removeFile,
-                  },
+                  staticClass: "form-control",
+                  attrs: { type: "file", disabled: _vm.isUploading },
+                  on: { change: _vm.uploadImageSuccess },
                 }),
                 _vm._v(" "),
                 _vm.progress > 0
@@ -49445,7 +49440,7 @@ var render = function () {
                     })
                   : _vm._e(),
               ],
-              1
+              2
             ),
           ]),
           _vm._v(" "),
