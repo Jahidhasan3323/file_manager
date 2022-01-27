@@ -69,7 +69,7 @@
                                                 title="Refresh">
                                             <i :class="`fas fa-sync ${loading ? 'fa-pulse' : ''}`"></i>
                                         </button>
-                                        <file-upload class="mx-1 "></file-upload>
+                                        <file-upload :max-file-size="maxFileSize" class="mx-1 "></file-upload>
                                         <directory class="mx-1" ref="header"></directory>
                                     </div>
 

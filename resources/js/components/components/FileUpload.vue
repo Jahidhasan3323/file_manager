@@ -49,6 +49,12 @@ import 'vue2-dropzone/dist/vue2Dropzone.min.css'
 
 export default {
     name      : "FileUpload",
+     props:{
+        maxFileSize:{
+            type:Number,
+            default:100
+        },
+    },
     components: {
         VueUploadMultipleImage,
         ProgressBar,
@@ -67,11 +73,10 @@ export default {
                 autoProcessQueue: false,
                 url             : 'no-url',
                 thumbnailWidth  : 150,
-                maxFilesize     : 0.5,
+                // acceptedFiles  : '.exe',
+                maxFilesize     : ((this.maxFileSize / 1024) / 1024),
                 maxFiles        : 1,
-                // acceptedFiles   : 'image/*',
                 addRemoveLinks: true,
-                headers       : {'Content-Type': 'application/octet-stream'}
             },
             options        : {}
         }
@@ -128,6 +133,7 @@ export default {
             this.$parent.deleteApiCall(this.$parent.currentDir + '/' + file.name)
         },
         uploadImageSuccess(fileList) {
+            console.log(fileList)
             $(".dz-progress").remove();
             this.$refs.fileUpload.removeEventListeners()
             Object.entries(fileList).forEach(ele => {
@@ -196,6 +202,7 @@ export default {
                 }
             }).catch(error => {
                 let errors = error?.response?.data?.errors;
+                 this.$refs.fileUpload.setupEventListeners()
                 this.cancelUpload(errors)
                 this.afterUpload()
             });

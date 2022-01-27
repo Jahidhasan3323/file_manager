@@ -239,8 +239,8 @@ class FileManagerService
     private function sort()
     {
         $files = collect($this->response['files']);
-        $files = $files->sort();
-        $files = $this->sortBy !== 'asc' ? $files->reverse() : $files;
+        $files = $files->sort()->values();
+        $files = $this->sortBy !== 'asc' ? $files->reverse()->values() : $files;
         $this->response['files'] = $files->toArray();
         return $this;
     }
