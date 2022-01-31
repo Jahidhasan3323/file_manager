@@ -74,7 +74,7 @@ class FileManager extends Controller
         $changeType = $request->post('changeType');
         $changeFileType = $request->post('changeFileType');
         try {
-            if (!Storage::disk($this->disc)->exists($targetDir . '/' . $selectedDir)) {
+            if (!Storage::disk($this->disc)->exists($this->relativePath . '/' . $targetDir . '/' . $selectedDir)) {
                 switch ([$changeFileType, $changeType]) {
                     case ['directory', 'copy'] :
                     {
@@ -100,7 +100,7 @@ class FileManager extends Controller
                 $response = [];
                 return response()->json(['data' => $response, 'status' => true, 'message' => "{$changeFileType} {$changeType} successfully"]);
             } else {
-                return response()->json(['status' => false, 'message' => "{$changeFileType} dose not exists"]);
+                return response()->json(['status' => false, 'message' => "{$changeFileType} already exists"]);
             }
         } catch (\Exception $e) {
             return ['status' => false, 'message' => $e->getMessage()];
@@ -112,9 +112,13 @@ class FileManager extends Controller
      */
     private function copyDirectory($targetDir, $selectedDir)
     {
-        if (!Storage::disk($this->disc)->exists($targetDir . '/' . $selectedDir)) {
-            Storage::disk($this->disc)->makeDirectory($targetDir . '/' . $selectedDir);
-            File::copyDirectory($this->rootPath . '/' . $selectedDir, $this->rootPath . '/' . $targetDir . '/' . $selectedDir);
+        $selectedDirectoryArray = explode('/', $selectedDir);
+        $selectedDirectory = end($selectedDirectoryArray);
+        $targetDir = "{$this->relativePath}/{$targetDir}/{$selectedDirectory}";
+        $selectedDir = ($this->relativePath == '/' ? $this->relativePath . '/' : '') . $selectedDir;
+        if (!Storage::disk($this->disc)->exists($targetDir)) {
+            Storage::disk($this->disc)->makeDirectory($targetDir);
+            File::copyDirectory($selectedDir, $targetDir);
         } else {
             throw new \ErrorException('Directory already exist');
         }
@@ -127,7 +131,10 @@ class FileManager extends Controller
      */
     private function moveDirectory($targetDir, $selectedDir)
     {
-        Storage::disk($this->disc)->move($selectedDir, $targetDir . '/' . $selectedDir);
+        $selectedDirectoryArray = explode('/', $selectedDir);
+        $selectedDirectory = end($selectedDirectoryArray);
+        $targetDir = "{$this->relativePath}/{$targetDir}/{$selectedDirectory}";
+        Storage::disk($this->disc)->move($selectedDir, $targetDir);
     }
 
     /**
@@ -136,7 +143,11 @@ class FileManager extends Controller
      */
     private function copyFile($targetDir, $selectedDir)
     {
-        Storage::disk($this->disc)->copy($this->relativePath . '/' . $selectedDir, $targetDir . '/' . $selectedDir);
+        $selectedFileArray = explode('/', $selectedDir);
+        $selectedFile = end($selectedFileArray);
+        $selectedDir = ($this->relativePath == '/' ? $this->relativePath . '/' : '') . $selectedDir;
+        $targetDir = "{$this->relativePath}/{$targetDir}/{$selectedFile}";
+        Storage::disk($this->disc)->copy($selectedDir, $targetDir);
     }
 
     /**
@@ -145,7 +156,11 @@ class FileManager extends Controller
      */
     private function moveFile($targetDir, $selectedDir)
     {
-        Storage::disk($this->disc)->move($this->relativePath . '/' . $selectedDir, $targetDir . '/' . $selectedDir);
+        $selectedFileArray = explode('/', $selectedDir);
+        $selectedFile = end($selectedFileArray);
+        $selectedDir = ($this->relativePath == '/' ? $this->relativePath . '/' : '') . $selectedDir;
+        $targetDir = "{$this->relativePath}/{$targetDir}/{$selectedFile}";
+        Storage::disk($this->disc)->move($selectedDir, $targetDir);
     }
 
 

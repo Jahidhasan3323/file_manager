@@ -1,4 +1,4 @@
-# Walton coding test 
+# Coding test for Full-Stack Web Developer 
 
 ## Installation
 
